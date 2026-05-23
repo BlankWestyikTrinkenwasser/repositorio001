@@ -202,11 +202,13 @@
             document.querySelectorAll('.link-group').forEach(l => l.remove());
             deselectLink();
             getNodes().forEach(nodeData => createNodeDOM(nodeData));
-            getLinks().forEach(linkData => createLinkDOM(linkData));
-            updateAllLinks();
-            renderBreadcrumbUI();
-        }
-        
+            const textEl = document.createElement('div');
+            textEl.className = 'node-text';
+            textEl.innerText = nodeData.text;
+            textEl.onclick = (e) => {
+                e.stopPropagation();
+                if(appState.role === 'editor') openEditor(nodeData.id);
+        };
         function createNewNodeData(x, y) {
             const id = 'node_' + (nodeIdCounter++);
             const nodeData = { id: id, x: x - 80, y: y - 50, text: 'Nova Ideia', color: PALETTE[0], attachments: [] };
