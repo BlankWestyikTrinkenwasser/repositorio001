@@ -197,10 +197,15 @@
 
         function renderWorkspace() {
             document.querySelectorAll('.node').forEach(n => n.remove());
-            document.querySelectorAll('.link-group').forEach(l => l.remove());
+            
+            // CORREÇÃO VISUAL: Remove todos os nós de conexão (<g>) antigos do SVG de maneira direta
+            if (svgLayer) {
+                const elements = svgLayer.querySelectorAll('.link-group');
+                elements.forEach(el => el.remove());
+            }
+            
             deselectLink();
             
-            // CORREÇÃO: Limpa a linha temporária antiga para não deixar fantasmas ao mudar de nível
             if (tempLine) { tempLine.remove(); tempLine = null; }
 
             getNodes().forEach(nodeData => createNodeDOM(nodeData));
