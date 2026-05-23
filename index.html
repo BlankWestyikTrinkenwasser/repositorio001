@@ -25,12 +25,11 @@
         
         body.viewer-mode .node-btn.edit-only { display: none; } 
 
-        .node-text { outline: none; cursor: text; min-height: 24px; color: #ffffff; font-size: 16px; text-align: center; user-select: text; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); font-weight: bold; }
+        .node-text { outline: none; cursor: pointer; min-height: 24px; color: #ffffff; font-size: 16px; text-align: center; user-select: text; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); font-weight: bold; padding: 4px; }
         body.viewer-mode .node-text { cursor: default; user-select: none; }
 
         .node-attachments { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
         
-        /* Novos Estilos de Anexos e Thumbnails */
         .attachment-item { display: flex; flex-direction: column; gap: 4px; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 6px; border-left: 4px solid #2563eb; }
         .attachment-thumb { width: 100%; max-height: 120px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; }
         .attachment-link { font-size: 12px; text-decoration: none; word-break: break-all; text-align: left; color: #1e293b; font-weight: bold; display: flex; align-items: center; gap: 4px; }
@@ -151,7 +150,6 @@
         let isConnecting = false, connectingFromId = null, tempLine = null, selectedLinkId = null;
         let nodeContextId = null; 
 
-        // Paleta de Cores para organizar mapas
         const PALETTE = ['rgba(0,0,0,0.1)', 'rgba(234, 179, 8, 0.3)', 'rgba(59, 130, 246, 0.3)', 'rgba(34, 197, 94, 0.3)', 'rgba(239, 68, 68, 0.3)'];
 
         const app = document.getElementById('app');
@@ -202,13 +200,11 @@
             document.querySelectorAll('.link-group').forEach(l => l.remove());
             deselectLink();
             getNodes().forEach(nodeData => createNodeDOM(nodeData));
-            const textEl = document.createElement('div');
-            textEl.className = 'node-text';
-            textEl.innerText = nodeData.text;
-            textEl.onclick = (e) => {
-                e.stopPropagation();
-                if(appState.role === 'editor') openEditor(nodeData.id);
-        };
+            getLinks().forEach(linkData => createLinkDOM(linkData));
+            updateAllLinks();
+            renderBreadcrumbUI();
+        }
+        
         function createNewNodeData(x, y) {
             const id = 'node_' + (nodeIdCounter++);
             const nodeData = { id: id, x: x - 80, y: y - 50, text: 'Nova Ideia', color: PALETTE[0], attachments: [] };
@@ -293,9 +289,11 @@
 
             const textEl = document.createElement('div');
             textEl.className = 'node-text';
-            textEl.contentEditable = (appState.role === 'editor');
             textEl.innerText = nodeData.text;
-            textEl.addEventListener('input', () => { nodeData.text = textEl.innerText; });
+            textEl.onclick = (e) => { 
+                e.stopPropagation();
+                if(appState.role === 'editor') openEditor(nodeData.id); 
+            };
 
             const attachmentsEl = document.createElement('div');
             attachmentsEl.className = 'node-attachments';
@@ -310,7 +308,6 @@
             nodeEl.appendChild(handleEl);
             workspace.appendChild(nodeEl);
 
-            // Drag event (Desktop e Mobile nativo via pointerdown)
             nodeEl.addEventListener('pointerdown', (e) => {
                 if (appState.role === 'viewer' || e.target.classList.contains('node-text') || e.target.classList.contains('handle') || e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
                 isDraggingNode = true; draggedNodeId = nodeData.id;
@@ -329,7 +326,6 @@
             });
         }
 
-        // --- SISTEMA INTELIGENTE DE ANEXOS E THUMBNAILS ---
         function addAttachmentDOM(container, attData) {
             const wrapper = document.createElement('div');
             wrapper.className = 'attachment-item';
@@ -338,7 +334,7 @@
             let isYoutube = attData.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
             let isImage = attData.url.match(/\.(jpeg|jpg|gif|png)$/i);
             
-            let iconText = '📂 '; // Padrão (Drive/PDF)
+            let iconText = '📂 ';
 
             if (isYoutube) {
                 const img = document.createElement('img');
@@ -406,7 +402,6 @@
         let lastPanX = 0, lastPanY = 0, isPanningCanvas = false;
         let initialPinchDist = null, initialCameraZ = 1;
 
-        // --- SISTEMA TOUCH MOBILE CORRIGIDO (DRAG DOS BALÕES) ---
         app.addEventListener('touchstart', (e) => {
             if(e.target.closest('.node') || e.target.tagName === 'BUTTON' || e.target.closest('#delete-link-btn')) return;
             if (e.touches.length === 2) {
@@ -430,7 +425,6 @@
                     camera.z = newZ; updateCamera();
                 }
             } else if (isDraggingNode && draggedNodeId && e.touches.length === 1) {
-                // CORREÇÃO APLICADA: Move o balão no Mobile!
                 e.preventDefault();
                 const nodeData = getNodes().find(n => n.id === draggedNodeId);
                 const nodeDOM = document.getElementById(draggedNodeId);
@@ -457,7 +451,6 @@
                 isConnecting = false;
                 if (tempLine) tempLine.remove();
                 if (e.changedTouches.length > 0) {
-                    // Descobre onde o dedo foi solto para conectar a seta no mobile
                     const touch = e.changedTouches[0];
                     const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
                     const targetNode = targetEl ? targetEl.closest('.node') : null;
@@ -467,7 +460,6 @@
             }
         });
 
-        // Controles de Mouse Desktop
         app.addEventListener('wheel', (e) => {
             e.preventDefault();
             const zoomAmount = 1 + ((e.deltaY > 0 ? -1 : 1) * 0.1);
@@ -519,7 +511,6 @@
             }
         });
 
-        // Cálculos Vetoriais e Visual
         function getCenter(nodeDOM) { return { x: parseFloat(nodeDOM.style.left) + nodeDOM.offsetWidth / 2, y: parseFloat(nodeDOM.style.top) + nodeDOM.offsetHeight / 2 }; }
         function getEdgePoint(cA, cB, w, h) {
             const dx = cB.x - cA.x, dy = cB.y - cA.y; if (dx === 0 && dy === 0) return cA;
@@ -621,7 +612,6 @@
         function openInviteModal(nodeId) { nodeContextId = nodeId; document.getElementById('invite-link-output').value = ''; modalInvite.classList.remove('hidden'); }
         document.getElementById('btn-close-invite').onclick = () => modalInvite.classList.add('hidden');
 
-        // ISOLAMENTO DE DADOS: Pega APENAS o balão clicado e os filhos dele!
         function extractSubTree(startNodeId) {
             let extractedData = {};
             extractedData['root'] = { nodes: getNodes().filter(n => n.id === startNodeId), links: [] };
@@ -653,16 +643,20 @@
 
         function checkInviteOnLoad() {
             const params = new URLSearchParams(window.location.search);
-            const inviteCode = params.get('invite');
+            // CORREÇÃO DA LEITURA DO CONVITE: Remove qualquer resquício de sanitização agressiva feita pelo WhatsApp
+            let inviteCode = params.get('invite');
             
             if(inviteCode) {
                 try {
-                    const payload = JSON.parse(decodeURIComponent(atob(decodeURIComponent(inviteCode))));
+                    // Proteção extra contra caracteres de espaço inseridos por aplicativos de chat externo
+                    let cleanCode = inviteCode.replace(/\s/g, '');
+                    const payload = JSON.parse(decodeURIComponent(atob(decodeURIComponent(cleanCode))));
                     document.getElementById('invite-badge').style.display = 'block';
                     projectData = payload.tree; 
                     appState.role = payload.r;
                     if(payload.r === 'viewer') document.body.classList.add('viewer-mode');
                 } catch (e) {
+                    console.error("Erro na decodificação do convite:", e);
                     alert("⚠️ O link do convite está quebrado ou incompleto.");
                 }
             }
@@ -671,6 +665,48 @@
                 createNewNodeData(window.innerWidth / 2, window.innerHeight / 3);
             }
             renderWorkspace();
+        }
+
+        // --- MOTOR DEDICADO DE EDIÇÃO DE TEXTO FLUTUANTE PARA MOBILE ---
+        let activeNodeId = null;
+
+        function openEditor(nodeId) {
+            activeNodeId = nodeId;
+            const node = getNodes().find(n => n.id === nodeId);
+            
+            if(!document.getElementById('editor-overlay')) {
+                const div = document.createElement('div');
+                div.id = 'editor-overlay';
+                div.className = 'modal-overlay hidden';
+                div.style.zIndex = '9999';
+                div.innerHTML = `
+                    <div class="modal-box" style="background: white; padding: 20px; border-radius: 12px; border: 2px solid #2563eb;">
+                        <h3 style="margin-top:0; color:#334155;">Editar Texto do Balão:</h3>
+                        <textarea id="editor-input" style="width: 100%; height: 100px; padding: 10px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; resize: none;"></textarea>
+                        <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
+                            <button class="btn-ui" style="background:#64748b; color:white; margin:0;" onclick="document.getElementById('editor-overlay').classList.add('hidden')">Cancelar</button>
+                            <button class="btn-ui" style="background:#2563eb; color:white; margin:0;" onclick="saveTextEdit()">Salvar Alterações</button>
+                        </div>
+                    </div>`;
+                document.body.appendChild(div);
+            }
+            
+            document.getElementById('editor-input').value = node.text;
+            document.getElementById('editor-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('editor-input').focus(), 100);
+        }
+
+        function saveTextEdit() {
+            const val = document.getElementById('editor-input').value;
+            const node = getNodes().find(n => n.id === activeNodeId);
+            node.text = val ? val.trim() : "Nova Ideia";
+            
+            const nodeDOM = document.getElementById(activeNodeId);
+            if(nodeDOM) {
+                const textDOM = nodeDOM.querySelector('.node-text');
+                if(textDOM) textDOM.innerText = node.text;
+            }
+            document.getElementById('editor-overlay').classList.add('hidden');
         }
 
         window.onload = () => {
