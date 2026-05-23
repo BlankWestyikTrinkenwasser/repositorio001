@@ -13,9 +13,11 @@
         #workspace { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; pointer-events: none; }
         #connections { position: absolute; top: 0; left: 0; width: 1px; height: 1px; overflow: visible; z-index: 1; }
 
-        .node { position: absolute; background: rgba(0,0,0,0.1); border: 2px solid #ef4444; border-radius: 12px; padding: 36px 16px 16px 16px; min-width: 160px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); cursor: grab; z-index: 2; user-select: none; pointer-events: auto; backdrop-filter: blur(4px); transition: background-color 0.3s; }
+        /* Ajustado o espaçamento superior para acomodar a barra de ferramentas maior */
+        .node { position: absolute; background: rgba(0,0,0,0.1); border: 2px solid #ef4444; border-radius: 12px; padding: 42px 16px 16px 16px; min-width: 180px; max-width: 280px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); cursor: grab; z-index: 2; user-select: none; pointer-events: auto; backdrop-filter: blur(4px); transition: background-color 0.3s; }
         
-        .node-toolbar { position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; max-width: 140px;}
+        /* Barra de ferramentas expandida para acomodar todos os botões na mesma linha horizontal */
+        .node-toolbar { position: absolute; top: 6px; right: 6px; left: 6px; display: flex; gap: 4px; justify-content: flex-end; flex-wrap: nowrap; }
         .node-btn { width: 26px; height: 26px; background: #334155; color: white; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: none; transition: background 0.2s; }
         .node-btn:hover { background: #2563eb; }
         .node-btn.delete-btn { background: #ef4444; }
@@ -25,7 +27,8 @@
         
         body.viewer-mode .node-btn.edit-only { display: none; } 
 
-        .node-text { outline: none; cursor: pointer; min-height: 24px; color: #ffffff; font-size: 16px; text-align: center; user-select: text; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); font-weight: bold; padding: 4px; }
+        /* Texto livre de sobreposições, centralizado e com quebra automática de linha */
+        .node-text { outline: none; cursor: pointer; min-height: 24px; color: #ffffff; font-size: 16px; text-align: center; user-select: text; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); font-weight: bold; padding: 4px; word-wrap: break-word; white-space: normal; }
         body.viewer-mode .node-text { cursor: default; user-select: none; }
 
         .node-attachments { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -272,10 +275,11 @@
             btnShare.title = 'Gerar Convite Deste Balão';
             btnShare.onclick = (e) => { e.stopPropagation(); openInviteModal(nodeData.id); };
 
+            /* CORREÇÃO DO LAYOUT: A lixeira agora fica na barra superior horizontal com os outros botões */
             const btnDelete = document.createElement('button');
             btnDelete.className = 'node-btn delete-btn edit-only';
             btnDelete.innerText = '🗑️';
-            btnDelete.title = 'Apagar';
+            btnDelete.title = 'Apagar Balão';
             btnDelete.onclick = (e) => { 
                 e.stopPropagation(); 
                 if(confirm("Tem certeza que deseja apagar este balão? TUDO dentro dele será perdido!")) deleteNodeData(nodeData.id);
@@ -643,12 +647,10 @@
 
         function checkInviteOnLoad() {
             const params = new URLSearchParams(window.location.search);
-            // CORREÇÃO DA LEITURA DO CONVITE: Remove qualquer resquício de sanitização agressiva feita pelo WhatsApp
             let inviteCode = params.get('invite');
             
             if(inviteCode) {
                 try {
-                    // Proteção extra contra caracteres de espaço inseridos por aplicativos de chat externo
                     let cleanCode = inviteCode.replace(/\s/g, '');
                     const payload = JSON.parse(decodeURIComponent(atob(decodeURIComponent(cleanCode))));
                     document.getElementById('invite-badge').style.display = 'block';
@@ -667,7 +669,7 @@
             renderWorkspace();
         }
 
-        // --- MOTOR DEDICADO DE EDIÇÃO DE TEXTO FLUTUANTE PARA MOBILE ---
+        // --- SISTEMA DE EDIÇÃO DE TEXTO FLUTUANTE ---
         let activeNodeId = null;
 
         function openEditor(nodeId) {
