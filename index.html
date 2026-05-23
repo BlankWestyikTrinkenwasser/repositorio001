@@ -13,10 +13,8 @@
         #workspace { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; pointer-events: none; }
         #connections { position: absolute; top: 0; left: 0; width: 1px; height: 1px; overflow: visible; z-index: 1; }
 
-        /* Ajustado o espaçamento superior para acomodar a barra de ferramentas maior */
         .node { position: absolute; background: rgba(0,0,0,0.1); border: 2px solid #ef4444; border-radius: 12px; padding: 42px 16px 16px 16px; min-width: 180px; max-width: 280px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); cursor: grab; z-index: 2; user-select: none; pointer-events: auto; backdrop-filter: blur(4px); transition: background-color 0.3s; }
         
-        /* Barra de ferramentas expandida para acomodar todos os botões na mesma linha horizontal */
         .node-toolbar { position: absolute; top: 6px; right: 6px; left: 6px; display: flex; gap: 4px; justify-content: flex-end; flex-wrap: nowrap; }
         .node-btn { width: 26px; height: 26px; background: #334155; color: white; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: none; transition: background 0.2s; }
         .node-btn:hover { background: #2563eb; }
@@ -27,7 +25,6 @@
         
         body.viewer-mode .node-btn.edit-only { display: none; } 
 
-        /* Texto livre de sobreposições, centralizado e com quebra automática de linha */
         .node-text { outline: none; cursor: pointer; min-height: 24px; color: #ffffff; font-size: 16px; text-align: center; user-select: text; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); font-weight: bold; padding: 4px; word-wrap: break-word; white-space: normal; }
         body.viewer-mode .node-text { cursor: default; user-select: none; }
 
@@ -202,6 +199,10 @@
             document.querySelectorAll('.node').forEach(n => n.remove());
             document.querySelectorAll('.link-group').forEach(l => l.remove());
             deselectLink();
+            
+            // CORREÇÃO: Limpa a linha temporária antiga para não deixar fantasmas ao mudar de nível
+            if (tempLine) { tempLine.remove(); tempLine = null; }
+
             getNodes().forEach(nodeData => createNodeDOM(nodeData));
             getLinks().forEach(linkData => createLinkDOM(linkData));
             updateAllLinks();
@@ -275,7 +276,6 @@
             btnShare.title = 'Gerar Convite Deste Balão';
             btnShare.onclick = (e) => { e.stopPropagation(); openInviteModal(nodeData.id); };
 
-            /* CORREÇÃO DO LAYOUT: A lixeira agora fica na barra superior horizontal com os outros botões */
             const btnDelete = document.createElement('button');
             btnDelete.className = 'node-btn delete-btn edit-only';
             btnDelete.innerText = '🗑️';
@@ -669,7 +669,7 @@
             renderWorkspace();
         }
 
-        // --- SISTEMA DE EDIÇÃO DE TEXTO FLUTUANTE ---
+        // --- SISTEMA DE EDIÇÃO DE TEXTO FLUTUANTE PARA MOBILE ---
         let activeNodeId = null;
 
         function openEditor(nodeId) {
